@@ -1,3 +1,3 @@
 # Aflare - Stay ahead of the flames.
 
-Satellite wildfire detection and alerts. An app that keeps you informed on fire activity in your area. 
+Aflare is an IOS and Android app that utilizes real time satellite data to monitor fires. Aflare lets users track wildfire detection and recive alerts about what is going on in their area. An app that keeps you informed on fire activity in your area. 
