@@ -6,7 +6,7 @@
    (UI, map and screens continue below in the second half of this file.)
    ========================================================================= */
 
-const VERSION = '2.3.0';
+const VERSION = '2.3.3';
 const CFG = Object.assign({ firebase: null }, window.AFLARE_CONFIG || {});
 
 /* ---------------------------------------------------------------- 1 Helpers */
@@ -586,9 +586,22 @@ async function fetchAlerts(lat, lng) {
 }
 const untilText = (ts) => (ts ? 'until ' + new Date(ts).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '');
 
+/** Headlines come from GDELT. Browsers can't read GDELT's answer when it is busy (its error replies carry no CORS
+    headers), so the app asks the Aflare Worker first (/news — shared cache + retry) and only falls back to GDELT
+    directly if there is no Worker, or it is an older Worker that doesn't know /news yet. */
 async function fetchNews(region) {
-  const q = '("wildfire" OR "forest fire" OR "brush fire")' + (region ? ' "' + region.replace(/"/g, '') + '"' : '') + ' sourcelang:english';
-  const r = await getJSON('https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&maxrecords=40&timespan=2d&sort=datedesc&query=' + encodeURIComponent(q), 20000);
+  const clean = region ? region.replace(/"/g, '') : '';
+  let r = null;
+  const proxy = nasaProxyUrl();
+  if (proxy) {
+    try { r = await getJSON(proxy + '/news' + (clean ? '?region=' + encodeURIComponent(clean) : ''), 35000); }
+    catch (e) { if (/HTTP 502/.test(e.message)) throw e; r = null; }   // 502 = the Worker reached GDELT and it is busy — asking GDELT ourselves would only fail too
+    if (r && !Array.isArray(r.articles)) r = null;
+  }
+  if (!r) {
+    const q = '("wildfire" OR "forest fire" OR "brush fire")' + (clean ? ' "' + clean + '"' : '') + ' sourcelang:english';
+    r = await getJSON('https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&maxrecords=40&timespan=2d&sort=datedesc&query=' + encodeURIComponent(q), 20000);
+  }
   const seenTitles = new Set();
   return (r.articles || []).filter((a) => {
     const t = (a.title || '').toLowerCase();

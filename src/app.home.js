@@ -126,6 +126,7 @@ function fireWhy(n) {
 function renderHome() {
   const v = viewLoc();
   $('homeLocCard').style.display = v ? 'none' : '';
+  $('tapHint').style.display = v && !LS.get('hint.tap') ? '' : 'none';
   ['hero', 'sitCard', 'hourCard', 'dayCard', 'tiles', 'homeFine'].forEach((id) => ($(id).style.display = v ? '' : 'none'));
   $('tipText').textContent = TIPS[Math.floor(Date.now() / 864e5) % TIPS.length];
   const newest = Math.max(state.at.wx || 0, state.at.nearby || 0, state.at.alerts || 0);
@@ -276,3 +277,6 @@ function openTile(id) {
   if (id === 'rain') return showInfo('Rain', `<div class="wxgrid"><div><b>${n.rain3d.toFixed(2)} in</b><span>Last 3 days</span></div><div><b>${wx.week[0] && wx.week[0].pop != null ? wx.week[0].pop + '%' : '—'}</b><span>Chance today</span></div><div><b>${wx.week.slice(0, 7).filter((d) => d.pop >= 40).length}</b><span>Wet days this week</span></div></div><p>A few dry days in a row let grass and brush dry out, which raises fire risk. Light rain helps only briefly — dead grass can dry out again within hours on a sunny, windy day.</p>`);
   if (id === 'sun') return showInfo('Sunrise & sunset', `<div class="wxgrid"><div><b>${clockLabel(wx.today.sunrise)}</b><span>Sunrise</span></div><div><b>${clockLabel(wx.today.sunset)}</b><span>Sunset</span></div><div><b>${esc(wx.tz ? wx.tz.split('/').pop().replace(/_/g, ' ') : '')}</b><span>Time zone</span></div></div><p>The VIIRS satellites pass over most places in the early afternoon and again after midnight, and detections usually appear in Aflare within about three hours of a pass.</p>`);
 }
+
+/** The one-time "anything with an arrow opens more detail" tip. Stays gone once dismissed (or once any detail sheet was opened). */
+function dismissTapHint() { LS.set('hint.tap', 1); const el = $('tapHint'); if (el) el.style.display = 'none'; }

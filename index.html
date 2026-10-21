@@ -98,6 +98,7 @@
     <header class="topbar" id="topbar">
       <div class="topleft">
         <button class="iconbtn" id="topleft-back" onclick="topBack()" aria-label="Back"><svg aria-hidden="true"><use href="#i-chevl"/></svg></button>
+        <button class="markbtn" id="topleft-mark" onclick="goTab('home')" tabindex="-1" aria-hidden="true"><img src="img/mark.png" alt=""></button>
       </div>
       <button class="brandbtn" id="topleft-logo" onclick="goTab('home')" aria-label="Aflare home"><img class="word" src="img/wordmark.png" alt=""></button>
       <div class="right">
@@ -187,12 +188,17 @@
 
         <div id="alertBanner" aria-live="polite"></div>
 
+        <div class="notecard taphint" id="tapHint" style="display:none">
+          <p><b>Tip:</b> anything with an arrow <span aria-hidden="true">›</span> opens more detail — try a forecast day, a condition tile or the fire weather. <button class="linkbtn" onclick="dismissTapHint()">Got it</button></p>
+        </div>
+
         <div class="card" id="sitCard">
           <div class="card-head"><h2 class="card-title" id="sitTitle">Near you</h2><button class="textbtn" onclick="mapGoView(); goTab('map')">Open map <svg aria-hidden="true"><use href="#i-chevr"/></svg></button></div>
           <ul class="sitlist" id="sitList" aria-live="polite"></ul>
           <div class="minimap-wrap">
             <div class="leafwrap" id="homeMiniMap" aria-hidden="true"></div>
             <button class="taphit" onclick="mapGoView(); goTab('map')" aria-label="Open the full fire map"></button>
+            <span class="mapcue" aria-hidden="true">Open map <svg><use href="#i-chevr"/></svg></span>
           </div>
           <div id="homeNearList"></div>
           <p class="fineprint" id="sitFoot"></p>
@@ -256,6 +262,7 @@
         <details class="legend" id="mapLegend">
           <summary>Legend</summary>
           <ul>
+            <li>Tap any flame or circle on the map for details.</li>
             <li class="lghead">Satellite heat (unconfirmed)</li>
             <li><span class="dotc low" aria-hidden="true"></span>Weak (under 10 MW)</li>
             <li><span class="dotc med" aria-hidden="true"></span>Moderate (10–50 MW)</li>
@@ -319,7 +326,8 @@
         <p class="cardsub">News reports from many publishers — not official information, and not checked by Aflare.</p>
         <div class="chiprow wrap" id="newsScope" role="group" aria-label="Headline area"></div>
         <div class="card list" id="newslist" aria-live="polite"><p class="muted-txt">Loading headlines…</p></div>
-        <p class="fineprint">Headlines are indexed by the GDELT Project and open on each publisher's own site.</p>
+        <p class="fineprint">Headlines are indexed by the GDELT Project and open on each publisher's own site. It can take up to half a minute to answer.</p>
+        <p class="fineprint"><a class="linkbtn" id="newsMore" href="https://news.google.com/search?q=wildfire" target="_blank" rel="noopener">Search wildfire news on Google News<span class="sr-only"> (opens in a new tab)</span></a></p>
       </div>
     </section>
 

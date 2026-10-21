@@ -33,6 +33,7 @@ function show(id, opts) {
   $('topbar').classList.toggle('show', chrome);
   $('bottomnav').classList.toggle('show', chrome);
   $('topleft-back').style.display = sub ? 'inline-flex' : 'none';
+  $('topleft-mark').style.display = sub ? 'none' : 'inline-flex';
   document.title = (SCREEN_TITLES[id] ? SCREEN_TITLES[id] + ' — ' : '') + 'Aflare';
   document.querySelectorAll('.navitem[data-tab]').forEach((n) => {
     const on = n.dataset.tab === state.tab && !sub;
@@ -210,6 +211,7 @@ function rememberFocus() {
 function focusSheet(id) { setTimeout(() => { const h = $(id).querySelector('h2'); if (h) h.focus({ preventScroll: true }); }, 60); }
 function showInfo(title, html, actions) {
   rememberFocus();
+  if (!LS.get('hint.tap')) dismissTapHint();   // they found out detail sheets exist
   $('info-title').textContent = title; $('info-body').innerHTML = html;
   $('info-actions').innerHTML = actions || '<button class="btn" onclick="closeSheets()"><span class="label">Got it</span></button>';
   $('fireSheet').classList.remove('open');
@@ -587,7 +589,7 @@ function renderLearn() {
   const done = data.read || {};
   $('articlelist').innerHTML = arts.length ? arts.map((a) => `<button class="listcard" onclick="openArticle('${a.id}','learn')"><span class="thumb">${photoThumb(a.id)}</span><span class="info"><span class="h">${esc(a.title)}</span><span class="m"><span class="taglet">${esc(a.cat)}</span>${esc(a.meta.split('·')[0])}${done[a.id] ? '<span class="readmark">✓ Read</span>' : ''}</span></span></button>`).join('') : '<p class="emptystate">No articles in this topic yet.</p>';
   $('videolist').innerHTML = !vids.length ? '<p class="emptystate">No videos in this topic yet.</p>' : vids.map((v) => `<button class="listcard" onclick="openVideo('${v.id}','learn')"><span class="thumb">${ytThumb(v.id)}</span><span class="info"><span class="h">${esc(v.title)}</span><span class="m"><span class="taglet">${esc(v.cat)}</span>${esc(v.channel)}${done[v.id] ? '<span class="readmark">✓ Watched</span>' : ''}</span></span></button>`).join('');
-  $('reslist').innerHTML = RESOURCES.map((r) => `<a class="listcard" href="${r.u}" target="_blank" rel="noopener"><span class="info"><span class="h">${esc(r.t)}</span><span class="m">${esc(r.s)}</span></span><svg class="linkarrow" aria-hidden="true"><use href="#i-ext"/></svg>${NEWTAB}</a>`).join('');
+  $('reslist').innerHTML = RESOURCES.map((r) => `<a class="listcard" href="${r.u}" target="_blank" rel="noopener"><span class="info"><span class="h">${esc(r.t)}</span><span class="m">${esc(r.s)}</span></span>${NEWTAB}</a>`).join('');
   renderChecklist();
 }
 
@@ -680,23 +682,26 @@ function renderAlerts() {
     + (checked ? `<p class="fineprint">${esc(checked)}${alertsNote ? ' · ' + esc(alertsNote) : ''}</p>` : '');
 }
 
-let newsLoading = 0;
+let newsLoading = 0, newsFailAt = 0, newsFailKey = '';
 async function loadNews(manual) {
   renderNewsScope();
   const scope = newsRegion();
   const ck = 'cache.news' + (scope ? '.' + scope.toLowerCase() : '');
   if (!manual && newsItems.length && newsScopeKey === ck && Date.now() - newsAt < 10 * 60e3) return renderNews();
   if (newsLoading && newsScopeKey === ck) return;
+  if (!manual && newsFailKey === ck && newsScopeKey === ck && Date.now() - newsFailAt < 60e3) return;   // it just failed — don't hit a busy service on every screen change; Refresh still tries
   newsLoading++;
   $('newsRefresh').textContent = 'Loading…'; $('newsRefresh').classList.add('busy');
   if (newsScopeKey !== ck) { const c = LS.get(ck); newsItems = c ? c.v : []; newsAt = c ? c.t : 0; newsScopeKey = ck; $('newslist').innerHTML = newsItems.length ? '' : '<div class="muted-txt">Loading headlines…</div>'; if (newsItems.length) renderNews(); }
   try {
     let items;
     try { items = await fetchNews(scope); }
-    catch (e1) { await sleep(6000); items = await fetchNews(scope); }   // GDELT allows 1 request / 5 s — retry once
+    catch (e1) { if (/HTTP 502/.test(e1.message)) throw e1; await sleep(6000); items = await fetchNews(scope); }   // GDELT allows 1 request / 5 s — retry once (not when the Worker already tried twice)
+    newsFailAt = 0;
     if (newsScopeKey === ck) { newsItems = items; newsAt = Date.now(); LS.set(ck, { t: newsAt, v: newsItems }); renderNews(); if (manual) toast('Headlines updated'); }
   } catch (e) {
-    if (newsScopeKey === ck) renderNews(newsItems.length ? '' : "Couldn't load headlines right now — the news service may be busy or you may be offline. Try Refresh in a minute.");
+    newsFailAt = Date.now(); newsFailKey = ck;
+    if (newsScopeKey === ck) renderNews(newsItems.length ? '' : "Couldn't load headlines right now — the news service is slow or busy, or you may be offline. Try Refresh in a minute, or search the news yourself with the link below.");
     if (manual && newsItems.length) toast("Couldn't refresh — showing saved headlines");
   }
   newsLoading = Math.max(0, newsLoading - 1);

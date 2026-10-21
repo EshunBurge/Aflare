@@ -30,7 +30,7 @@ Android, Windows, Mac and Chromebook — no app-store account needed.
   states which of these applies on the device.
 * NWS warnings and NIFC incidents are **US only**; outside the US those rows say "not available" rather than "none".
 * Air quality is a **model estimate** (CAMS), not a sensor reading.
-* Headlines come from GDELT, which rate-limits heavy use; when it is busy the app says so.
+* Headlines come from GDELT, which is slow (often ~15 s) and rate-limits hard. The app asks your Worker (`/news`), which shares one answer between visitors for 15 minutes; if GDELT is still busy the app says so and offers a "Search wildfire news on Google News" link instead. (Google News's feed itself is not used — its terms limit it to personal feed readers.)
 
 ### Mock data
 The app itself contains **no mock or sample data** — everything shown comes from the live services above, or from the
@@ -48,6 +48,7 @@ copy saved the last time they answered (always marked with its time, and "Offlin
   (incl. onboarding and offline) in light and dark, at 320, 390 and 768 px — 0 violations. A keyboard test pressed Tab
   630 times and added a place and ticked the checklist by keyboard: visible focus everywhere, nothing hidden under the bars,
   dialogs trap and return focus. 105 workflow tests, 10 failure-state tests and a click-every-control crawl (353 controls) pass.
+* **Tap cues:** anything that opens more detail inside Aflare ends in a chevron (›) — forecast days, condition tiles, "Near you" rows, articles, videos, alert history, the featured article and the little map on Home ("Open map ›"); anything that leaves Aflare (headlines, official links) ends in an arrow (↗). Rows tint when pressed. A dismissible one-time tip on Home explains this and disappears for good once dismissed or once any detail sheet has been opened. The cues are drawn in CSS (`.listcard::after`, `.tile::after`, … in `style.css`, "Tap cues"), so new list rows get them automatically.
 * Real `<button>`s and `<label>`s everywhere, a "Skip to main content" link, live regions for status messages,
   `role="switch"` / `aria-checked` toggles, page titles per screen, alt text for photos, and reduced-motion support.
 * **Maps:** OpenStreetMap street tiles, or Esri World Imagery with place labels (the Satellite button). The map's
@@ -98,11 +99,16 @@ firebase deploy
 Each user's profile, photo, locations, emergency contacts and settings are stored at `users/{their-uid}` and the
 rules only let that user read or write it. If Firebase can't be reached the app falls back to on-device accounts.
 
-## NASA data (Cloudflare Worker) — already connected
+## NASA data and headlines (Cloudflare Worker) — already connected
 NASA's servers don't allow browsers to call them directly, so `nasa-proxy/worker.js` runs on Cloudflare
 (free) at `https://aflare-nasa.eshunburge.workers.dev`, keeps your FIRMS `MAP_KEY` secret, and adds the
 headers browsers need. `config.js → nasa.proxyUrl` tells the app to use it. If the Worker is ever down, the app
 silently switches to the same NASA data republished by Esri.
+
+The same Worker also has a `/news` route for the wildfire headlines (GDELT answers slowly and its error replies carry no
+CORS headers, so browsers can't read them directly). **After updating the app to v2.3.1 or later, paste the new
+`nasa-proxy/worker.js` into your Worker (Edit code → paste → Deploy)** — your `MAP_KEY` secret stays as it is. Until you do,
+the app falls back to asking GDELT directly, which often fails.
 
 ## Project layout (read this to understand the code)
 ```
@@ -112,7 +118,7 @@ app.js                all logic (built from src/app.part1.js + part2 + app.home.
 sw.js                 service worker: offline shell, tile cache, notifications, background check
 manifest.webmanifest  install info (name, icons, shortcuts)
 config.js             the one file you edit (Firebase config + NASA Worker URL)
-nasa-proxy/worker.js  the Cloudflare Worker that relays NASA FIRMS data
+nasa-proxy/worker.js  the Cloudflare Worker that relays NASA FIRMS data (/area) and wildfire headlines (/news)
 lib/                  Leaflet (maps) and the Firebase SDK, bundled so the app works offline
 img/, icons/          logo + app icons
 firebase.json, firestore.rules   hosting + database security

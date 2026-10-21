@@ -6,7 +6,7 @@
    (UI, map and screens continue below in the second half of this file.)
    ========================================================================= */
 
-const VERSION = '2.3.0';
+const VERSION = '2.3.3';
 const CFG = Object.assign({ firebase: null }, window.AFLARE_CONFIG || {});
 
 /* ---------------------------------------------------------------- 1 Helpers */
@@ -586,9 +586,22 @@ async function fetchAlerts(lat, lng) {
 }
 const untilText = (ts) => (ts ? 'until ' + new Date(ts).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '');
 
+/** Headlines come from GDELT. Browsers can't read GDELT's answer when it is busy (its error replies carry no CORS
+    headers), so the app asks the Aflare Worker first (/news — shared cache + retry) and only falls back to GDELT
+    directly if there is no Worker, or it is an older Worker that doesn't know /news yet. */
 async function fetchNews(region) {
-  const q = '("wildfire" OR "forest fire" OR "brush fire")' + (region ? ' "' + region.replace(/"/g, '') + '"' : '') + ' sourcelang:english';
-  const r = await getJSON('https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&maxrecords=40&timespan=2d&sort=datedesc&query=' + encodeURIComponent(q), 20000);
+  const clean = region ? region.replace(/"/g, '') : '';
+  let r = null;
+  const proxy = nasaProxyUrl();
+  if (proxy) {
+    try { r = await getJSON(proxy + '/news' + (clean ? '?region=' + encodeURIComponent(clean) : ''), 35000); }
+    catch (e) { if (/HTTP 502/.test(e.message)) throw e; r = null; }   // 502 = the Worker reached GDELT and it is busy — asking GDELT ourselves would only fail too
+    if (r && !Array.isArray(r.articles)) r = null;
+  }
+  if (!r) {
+    const q = '("wildfire" OR "forest fire" OR "brush fire")' + (clean ? ' "' + clean + '"' : '') + ' sourcelang:english';
+    r = await getJSON('https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&maxrecords=40&timespan=2d&sort=datedesc&query=' + encodeURIComponent(q), 20000);
+  }
   const seenTitles = new Set();
   return (r.articles || []).filter((a) => {
     const t = (a.title || '').toLowerCase();
@@ -938,6 +951,7 @@ function show(id, opts) {
   $('topbar').classList.toggle('show', chrome);
   $('bottomnav').classList.toggle('show', chrome);
   $('topleft-back').style.display = sub ? 'inline-flex' : 'none';
+  $('topleft-mark').style.display = sub ? 'none' : 'inline-flex';
   document.title = (SCREEN_TITLES[id] ? SCREEN_TITLES[id] + ' — ' : '') + 'Aflare';
   document.querySelectorAll('.navitem[data-tab]').forEach((n) => {
     const on = n.dataset.tab === state.tab && !sub;
@@ -1115,6 +1129,7 @@ function rememberFocus() {
 function focusSheet(id) { setTimeout(() => { const h = $(id).querySelector('h2'); if (h) h.focus({ preventScroll: true }); }, 60); }
 function showInfo(title, html, actions) {
   rememberFocus();
+  if (!LS.get('hint.tap')) dismissTapHint();   // they found out detail sheets exist
   $('info-title').textContent = title; $('info-body').innerHTML = html;
   $('info-actions').innerHTML = actions || '<button class="btn" onclick="closeSheets()"><span class="label">Got it</span></button>';
   $('fireSheet').classList.remove('open');
@@ -1492,7 +1507,7 @@ function renderLearn() {
   const done = data.read || {};
   $('articlelist').innerHTML = arts.length ? arts.map((a) => `<button class="listcard" onclick="openArticle('${a.id}','learn')"><span class="thumb">${photoThumb(a.id)}</span><span class="info"><span class="h">${esc(a.title)}</span><span class="m"><span class="taglet">${esc(a.cat)}</span>${esc(a.meta.split('·')[0])}${done[a.id] ? '<span class="readmark">✓ Read</span>' : ''}</span></span></button>`).join('') : '<p class="emptystate">No articles in this topic yet.</p>';
   $('videolist').innerHTML = !vids.length ? '<p class="emptystate">No videos in this topic yet.</p>' : vids.map((v) => `<button class="listcard" onclick="openVideo('${v.id}','learn')"><span class="thumb">${ytThumb(v.id)}</span><span class="info"><span class="h">${esc(v.title)}</span><span class="m"><span class="taglet">${esc(v.cat)}</span>${esc(v.channel)}${done[v.id] ? '<span class="readmark">✓ Watched</span>' : ''}</span></span></button>`).join('');
-  $('reslist').innerHTML = RESOURCES.map((r) => `<a class="listcard" href="${r.u}" target="_blank" rel="noopener"><span class="info"><span class="h">${esc(r.t)}</span><span class="m">${esc(r.s)}</span></span><svg class="linkarrow" aria-hidden="true"><use href="#i-ext"/></svg>${NEWTAB}</a>`).join('');
+  $('reslist').innerHTML = RESOURCES.map((r) => `<a class="listcard" href="${r.u}" target="_blank" rel="noopener"><span class="info"><span class="h">${esc(r.t)}</span><span class="m">${esc(r.s)}</span></span>${NEWTAB}</a>`).join('');
   renderChecklist();
 }
 
@@ -1585,23 +1600,26 @@ function renderAlerts() {
     + (checked ? `<p class="fineprint">${esc(checked)}${alertsNote ? ' · ' + esc(alertsNote) : ''}</p>` : '');
 }
 
-let newsLoading = 0;
+let newsLoading = 0, newsFailAt = 0, newsFailKey = '';
 async function loadNews(manual) {
   renderNewsScope();
   const scope = newsRegion();
   const ck = 'cache.news' + (scope ? '.' + scope.toLowerCase() : '');
   if (!manual && newsItems.length && newsScopeKey === ck && Date.now() - newsAt < 10 * 60e3) return renderNews();
   if (newsLoading && newsScopeKey === ck) return;
+  if (!manual && newsFailKey === ck && newsScopeKey === ck && Date.now() - newsFailAt < 60e3) return;   // it just failed — don't hit a busy service on every screen change; Refresh still tries
   newsLoading++;
   $('newsRefresh').textContent = 'Loading…'; $('newsRefresh').classList.add('busy');
   if (newsScopeKey !== ck) { const c = LS.get(ck); newsItems = c ? c.v : []; newsAt = c ? c.t : 0; newsScopeKey = ck; $('newslist').innerHTML = newsItems.length ? '' : '<div class="muted-txt">Loading headlines…</div>'; if (newsItems.length) renderNews(); }
   try {
     let items;
     try { items = await fetchNews(scope); }
-    catch (e1) { await sleep(6000); items = await fetchNews(scope); }   // GDELT allows 1 request / 5 s — retry once
+    catch (e1) { if (/HTTP 502/.test(e1.message)) throw e1; await sleep(6000); items = await fetchNews(scope); }   // GDELT allows 1 request / 5 s — retry once (not when the Worker already tried twice)
+    newsFailAt = 0;
     if (newsScopeKey === ck) { newsItems = items; newsAt = Date.now(); LS.set(ck, { t: newsAt, v: newsItems }); renderNews(); if (manual) toast('Headlines updated'); }
   } catch (e) {
-    if (newsScopeKey === ck) renderNews(newsItems.length ? '' : "Couldn't load headlines right now — the news service may be busy or you may be offline. Try Refresh in a minute.");
+    newsFailAt = Date.now(); newsFailKey = ck;
+    if (newsScopeKey === ck) renderNews(newsItems.length ? '' : "Couldn't load headlines right now — the news service is slow or busy, or you may be offline. Try Refresh in a minute, or search the news yourself with the link below.");
     if (manual && newsItems.length) toast("Couldn't refresh — showing saved headlines");
   }
   newsLoading = Math.max(0, newsLoading - 1);
@@ -2147,6 +2165,7 @@ function fireWhy(n) {
 function renderHome() {
   const v = viewLoc();
   $('homeLocCard').style.display = v ? 'none' : '';
+  $('tapHint').style.display = v && !LS.get('hint.tap') ? '' : 'none';
   ['hero', 'sitCard', 'hourCard', 'dayCard', 'tiles', 'homeFine'].forEach((id) => ($(id).style.display = v ? '' : 'none'));
   $('tipText').textContent = TIPS[Math.floor(Date.now() / 864e5) % TIPS.length];
   const newest = Math.max(state.at.wx || 0, state.at.nearby || 0, state.at.alerts || 0);
@@ -2298,6 +2317,9 @@ function openTile(id) {
   if (id === 'sun') return showInfo('Sunrise & sunset', `<div class="wxgrid"><div><b>${clockLabel(wx.today.sunrise)}</b><span>Sunrise</span></div><div><b>${clockLabel(wx.today.sunset)}</b><span>Sunset</span></div><div><b>${esc(wx.tz ? wx.tz.split('/').pop().replace(/_/g, ' ') : '')}</b><span>Time zone</span></div></div><p>The VIIRS satellites pass over most places in the early afternoon and again after midnight, and detections usually appear in Aflare within about three hours of a pass.</p>`);
 }
 
+/** The one-time "anything with an arrow opens more detail" tip. Stays gone once dismissed (or once any detail sheet was opened). */
+function dismissTapHint() { LS.set('hint.tap', 1); const el = $('tapHint'); if (el) el.style.display = 'none'; }
+
 /* =========================================================================
    Third part — detail sheets, home extras, profile & emergency tools,
    keyboard access, boot
@@ -2431,6 +2453,7 @@ function homeRegion() {
 function newsRegion() { return state.newsScope === 'near' ? homeRegion() : ''; }
 function renderNewsScope() {
   const el = $('newsScope'), reg = homeRegion();
+  const more = $('newsMore'); if (more) more.href = 'https://news.google.com/search?q=' + encodeURIComponent('wildfire' + (newsRegion() ? ' ' + newsRegion() : '') + ' when:2d');
   if (!reg) { el.innerHTML = ''; return; }
   const near = state.newsScope === 'near';
   el.innerHTML = `<button class="chip ${near ? '' : 'active'}" aria-pressed="${!near}" onclick="setNewsScope('all')">Everywhere</button><button class="chip ${near ? 'active' : ''}" aria-pressed="${near}" onclick="setNewsScope('near')">Near ${esc(reg)}</button>`;

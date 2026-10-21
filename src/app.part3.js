@@ -132,6 +132,7 @@ function homeRegion() {
 function newsRegion() { return state.newsScope === 'near' ? homeRegion() : ''; }
 function renderNewsScope() {
   const el = $('newsScope'), reg = homeRegion();
+  const more = $('newsMore'); if (more) more.href = 'https://news.google.com/search?q=' + encodeURIComponent('wildfire' + (newsRegion() ? ' ' + newsRegion() : '') + ' when:2d');
   if (!reg) { el.innerHTML = ''; return; }
   const near = state.newsScope === 'near';
   el.innerHTML = `<button class="chip ${near ? '' : 'active'}" aria-pressed="${!near}" onclick="setNewsScope('all')">Everywhere</button><button class="chip ${near ? 'active' : ''}" aria-pressed="${near}" onclick="setNewsScope('near')">Near ${esc(reg)}</button>`;
