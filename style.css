@@ -155,9 +155,9 @@ b, strong { font-weight: 650; }
 /* The flame mark sits in the left corner on the main tabs; sub-screens use that corner for Back. It repeats the Aflare
    button in the middle, so keyboard and screen-reader users skip it (tabindex -1, aria-hidden); taps still go Home. */
 .markbtn { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; background: none; border: 0; border-radius: 50%; cursor: pointer; padding: 0; }
-.markbtn img { height: 28px; width: auto; display: block; }
+.markbtn img { height: 28px; width: 28px; display: block; }
 .markbtn:active { transform: scale(.94); }
-.brandbtn .word { height: 20px; width: auto; display: block; }
+.brandbtn .word { height: 20px; width: 119px; display: block; }
 .topbar .right { display: flex; align-items: center; gap: 6px; justify-self: end; }
 
 .iconbtn {
@@ -1105,3 +1105,8 @@ a.listcard[target="_blank"]::after, a.hn-item[target="_blank"]::after { -webkit-
 .taphint { margin: 12px 0 0; align-items: center; }
 .taphint p { margin: 0; }
 @media (max-width: 340px) { .dayrow { grid-template-columns: 66px 36px 30px 1fr 32px 16px; gap: 4px; } }
+/* Logos never stretch: fixed aspect ratio, scale down inside their box instead of squashing (Safari on iPhone
+   could squash them because of the global img max-width inside the top bar's grid / flex boxes). */
+img.word { aspect-ratio: 560 / 94; object-fit: contain; max-width: none; flex-shrink: 0; }
+img.mark { aspect-ratio: 288 / 286; object-fit: contain; max-width: none; flex-shrink: 0; }
+.brandbtn { min-width: 0; flex-shrink: 0; }

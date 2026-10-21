@@ -3,7 +3,7 @@
    - Caches map tiles you've already viewed
    - Shows notifications and (on Android/Chrome) checks for fires in the background
    Live fire/weather data is never cached here; the app keeps its own "last known" copy. */
-const VERSION = 'aflare-v2.3.3';
+const VERSION = 'aflare-v2.3.4';
 const SHELL_CACHE = VERSION + '-shell';
 const TILE_CACHE = 'aflare-tiles';
 const FONT_CACHE = 'aflare-fonts';
