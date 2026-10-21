@@ -1,0 +1,61 @@
+{
+  "name": "Aflare \u2014 Satellite fire alerts",
+  "short_name": "Aflare",
+  "description": "Aflare aims to make fire awareness faster. Live NASA satellite fire detections, fire-weather forecasts, air quality and official alerts.",
+  "id": "./",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F2EC",
+  "theme_color": "#F7F2EC",
+  "categories": [
+    "weather",
+    "utilities",
+    "news"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Report a fire",
+      "short_name": "Report",
+      "url": "./?screen=emergency",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Fire map",
+      "short_name": "Map",
+      "url": "./?screen=map",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

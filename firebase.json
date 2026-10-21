@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": ["firebase.json", "netlify.toml", "firestore.rules", "**/.*", "**/node_modules/**", "src/**", "nasa-proxy/**", "build.py", "README.md", "*.zip"],
+    "headers": [
+      { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+      { "source": "/config.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+      { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+      { "source": "/manifest.webmanifest", "headers": [{ "key": "Content-Type", "value": "application/manifest+json" }] }
+    ]
+  },
+  "firestore": { "rules": "firestore.rules" }
+}

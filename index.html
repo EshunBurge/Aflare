@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aflare — Satellite fire alerts</title>
+<meta name="description" content="Aflare aims to make fire awareness faster. Live NASA satellite fire detections, fire-weather forecasts, air quality and official alerts for the places you care about.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F7F2EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161210" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Aflare">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://tile.openstreetmap.org">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lib/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true" focusable="false">
+<defs>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 23c-4.97 0-9-3.58-9-8 0-3.5 2-6 3-9 .5 2 1 3 2 3 0-3 1-5 3-7 0 3 .5 5 2 6 1-1 1-2.5 1-4 3 2 6 5.5 6 11 0 4.42-4.03 8-9 8z" fill="currentColor"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 20l-6-2.5V4L9 6.5 15 4l6 2.5V20L15 17.5 9 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 6.5v13.5M15 4v13.5" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.4 11.4 0 00.57 3.6 1 1 0 01-.25 1z" fill="currentColor"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v15.5H6.5A2.5 2.5 0 004 21z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 18.5A2.5 2.5 0 016.5 16H20" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 01-3.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevl" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chevr" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-7.8 7-13a7 7 0 10-14 0c0 5.2 7 13 7 13z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="8" r="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 4h4v16H7zM13 4h4v16h-4z" fill="currentColor"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M3 6h18v12H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 6l9 7 9-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 018 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v5M12 18v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 13l9 5 9-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3.2 4.1M6.6 6.6A17 17 0 002 12s3.5 7 10 7a9.7 9.7 0 005.4-1.6M9.9 9.9a3 3 0 004.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 5h13v14H6a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M17 9h3v8a2 2 0 01-2 2M7.5 9h6M7.5 12.5h6M7.5 16h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-wind" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 10-3-3M3 12h16a3 3 0 11-3 3M3 16h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 014 0v9a4 4 0 11-4 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="4.5" cy="6" r="1.3" fill="currentColor"/><circle cx="4.5" cy="12" r="1.3" fill="currentColor"/><circle cx="4.5" cy="18" r="1.3" fill="currentColor"/></symbol>
+  <symbol id="w-sun" viewBox="0 0 32 32"><g stroke="#F4B23A" stroke-width="2.2" stroke-linecap="round"><line x1="25.0" y1="16.0" x2="28.0" y2="16.0"/><line x1="7.0" y1="16.0" x2="4.0" y2="16.0"/><line x1="16.0" y1="25.0" x2="16.0" y2="28.0"/><line x1="16.0" y1="7.0" x2="16.0" y2="4.0"/><line x1="22.4" y1="22.4" x2="24.5" y2="24.5"/><line x1="9.6" y1="22.4" x2="7.5" y2="24.5"/><line x1="22.4" y1="9.6" x2="24.5" y2="7.5"/><line x1="9.6" y1="9.6" x2="7.5" y2="7.5"/></g><circle cx="16" cy="16" r="6.2" fill="#F4B23A"/></symbol>
+  <symbol id="w-moon" viewBox="0 0 32 32"><path d="M21.5 22.8A9.5 9.5 0 0 1 13.2 7a9.5 9.5 0 1 0 12.4 12.4 9.5 9.5 0 0 1-4.1 3.4z" fill="#E9CF7A" stroke="#B89B3E" stroke-width="1"/></symbol>
+  <symbol id="w-pcloud" viewBox="0 0 32 32"><g stroke="#F4B23A" stroke-width="2" stroke-linecap="round"><line x1="17.5" y1="11.0" x2="19.6" y2="11.0"/><line x1="4.5" y1="11.0" x2="2.4" y2="11.0"/><line x1="11.0" y1="17.5" x2="11.0" y2="19.6"/><line x1="11.0" y1="4.5" x2="11.0" y2="2.4"/><line x1="15.6" y1="15.6" x2="17.1" y2="17.1"/><line x1="6.4" y1="15.6" x2="4.9" y2="17.1"/><line x1="15.6" y1="6.4" x2="17.1" y2="4.9"/><line x1="6.4" y1="6.4" x2="4.9" y2="4.9"/></g><circle cx="11" cy="11" r="4.6" fill="#F4B23A"/><path d="M12.5 27h11.2a4.6 4.6 0 0 0 .6-9.15 6.4 6.4 0 0 0-12.1-1.9A5.2 5.2 0 0 0 12.5 27z" fill="#C3CBD4" stroke="#7D8794" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+  <symbol id="w-pcloud-n" viewBox="0 0 32 32"><path d="M15 14.5A7 7 0 0 1 8.9 3a7 7 0 1 0 9.1 9.1 7 7 0 0 1-3 2.4z" fill="#E9CF7A" stroke="#B89B3E" stroke-width="1"/><path d="M12.5 27h11.2a4.6 4.6 0 0 0 .6-9.15 6.4 6.4 0 0 0-12.1-1.9A5.2 5.2 0 0 0 12.5 27z" fill="#C3CBD4" stroke="#7D8794" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+  <symbol id="w-cloud" viewBox="0 0 32 32"><path d="M9.5 26h13.2a5.3 5.3 0 0 0 .7-10.55A7.4 7.4 0 0 0 9.4 14.2 6 6 0 0 0 9.5 26z" fill="#C3CBD4" stroke="#7D8794" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+  <symbol id="w-fog" viewBox="0 0 32 32"><path d="M9.5 19h13.2a5.3 5.3 0 0 0 .7-10.55A7.4 7.4 0 0 0 9.4 7.2 6 6 0 0 0 9.5 19z" fill="#C3CBD4" stroke="#7D8794" stroke-width="1.2" stroke-linejoin="round"/><g stroke="#8F99A5" stroke-width="2" stroke-linecap="round"><line x1="6" y1="23" x2="26" y2="23"/><line x1="9" y1="27" x2="23" y2="27"/></g></symbol>
+  <symbol id="w-drizzle" viewBox="0 0 32 32"><path d="M9.5 20h13.2a5.3 5.3 0 0 0 .7-10.55A7.4 7.4 0 0 0 9.4 8.2 6 6 0 0 0 9.5 20z" fill="#C3CBD4" stroke="#7D8794" stroke-width="1.2" stroke-linejoin="round"/><g stroke="#3E8ED0" stroke-width="2" stroke-linecap="round"><line x1="12" y1="24" x2="11.3" y2="26"/><line x1="17" y1="24" x2="16.3" y2="26"/><line x1="22" y1="24" x2="21.3" y2="26"/></g></symbol>
+  <symbol id="w-rain" viewBox="0 0 32 32"><path d="M9.5 20h13.2a5.3 5.3 0 0 0 .7-10.55A7.4 7.4 0 0 0 9.4 8.2 6 6 0 0 0 9.5 20z" fill="#C3CBD4" stroke="#7D8794" stroke-width="1.2" stroke-linejoin="round"/><g stroke="#2F7FC4" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="23.5" x2="10.6" y2="28"/><line x1="17" y1="23.5" x2="15.6" y2="28"/><line x1="22" y1="23.5" x2="20.6" y2="28"/></g></symbol>
+  <symbol id="w-snow" viewBox="0 0 32 32"><path d="M9.5 20h13.2a5.3 5.3 0 0 0 .7-10.55A7.4 7.4 0 0 0 9.4 8.2 6 6 0 0 0 9.5 20z" fill="#C3CBD4" stroke="#7D8794" stroke-width="1.2" stroke-linejoin="round"/><g fill="#7FB3E0"><circle cx="11.5" cy="25" r="1.6"/><circle cx="16.5" cy="27" r="1.6"/><circle cx="21.5" cy="25" r="1.6"/></g></symbol>
+  <symbol id="w-storm" viewBox="0 0 32 32"><path d="M9.5 19h13.2a5.3 5.3 0 0 0 .7-10.55A7.4 7.4 0 0 0 9.4 7.2 6 6 0 0 0 9.5 19z" fill="#9AA4AF" stroke="#6B7480" stroke-width="1.2" stroke-linejoin="round"/><path d="M17 18l-4 6.5h3.5L15 30l5.5-8H17l2-4z" fill="#F4B23A" stroke="#B57E16" stroke-width=".8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 3l5 9h-3.5v9h-3v-9H7z" fill="currentColor"/></symbol>
+  <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M5 18a7 7 0 0 1 14 0M2 18h20M12 3v5M9.5 5.5L12 3l2.5 2.5M4.2 11.2l1.4 1.4M19.8 11.2l-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-air" viewBox="0 0 24 24"><path d="M4 9h10a3 3 0 1 0-3-3M4 13h14a3 3 0 1 1-3 3M4 17h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-uv" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevd" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs>
+</svg>
+
+<a class="skip-link" href="#" onclick="skipToContent(event)">Skip to main content</a>
+<noscript><p class="noscript">Aflare needs JavaScript to show live fire data.</p></noscript>
+
+<div class="shell">
+<aside class="desk-intro" aria-label="About Aflare">
+  <div class="brandrow"><img class="word" src="img/wordmark.png" alt="Aflare"></div>
+  <p class="tag">Aflare aims to make fire awareness faster.</p>
+  <p class="help">Live satellite fire detections, official incident data and weather alerts for the places you care about.</p>
+  <p class="help">On a phone, open this page and choose <b>Share → Add to Home Screen</b> (iPhone) or <b>Install app</b> (Android / Chrome) for the full-screen app.</p>
+  <p class="help">Aflare is an information tool. It does not replace official emergency alerts or a call to emergency services.</p>
+  <button class="btn" id="installDesktopBtn" style="display:none" onclick="installApp()"><span class="label">Install Aflare on this computer</span></button>
+</aside>
+
+<div class="appframe">
+  <div class="app" id="app">
+
+    <header class="topbar" id="topbar">
+      <div class="topleft">
+        <button class="iconbtn" id="topleft-back" onclick="topBack()" aria-label="Back"><svg aria-hidden="true"><use href="#i-chevl"/></svg></button>
+      </div>
+      <button class="brandbtn" id="topleft-logo" onclick="goTab('home')" aria-label="Aflare home"><img class="word" src="img/wordmark.png" alt=""></button>
+      <div class="right">
+        <button class="iconbtn" id="bellBtn" onclick="openNotif()" aria-label="Notifications"><svg aria-hidden="true"><use href="#i-bell"/></svg><span class="dot" id="notifdot"></span></button>
+        <button class="avatar" id="topAvatar" onclick="openProfile()" aria-label="Your profile">?</button>
+      </div>
+    </header>
+
+    <!-- ============ SPLASH ============ -->
+    <section class="screen active" id="screen-splash" aria-label="Aflare is starting">
+      <button class="splash-inner" onclick="skipSplash()" aria-label="Continue to Aflare">
+        <img class="mark" src="img/mark.png" alt="">
+        <img class="word" src="img/wordmark.png" alt="Aflare">
+        <span class="tagline">Aflare aims to make fire awareness faster.</span>
+      </button>
+    </section>
+
+    <!-- ============ AUTH ============ -->
+    <section class="screen" id="screen-auth" aria-labelledby="authTitle">
+      <div class="content">
+        <div class="authbrand anim">
+          <img class="word" src="img/wordmark.png" alt="Aflare">
+          <p class="authtag">Aflare aims to make fire awareness faster.</p>
+        </div>
+        <div class="fb-banner anim" id="fbBanner" role="note" style="display:none;"></div>
+
+        <form class="auth-form" id="form-login" onsubmit="event.preventDefault(); submitLogin($('loginBtn'))" novalidate>
+          <div class="authhead anim">
+            <h1 id="authTitle">Welcome back</h1>
+            <p>Log in to see fires near the places you care about.</p>
+          </div>
+          <div class="field anim"><label for="loginEmail">Email</label><div class="inputwrap"><svg aria-hidden="true"><use href="#i-mail"/></svg><input type="email" id="loginEmail" autocomplete="email" inputmode="email" required aria-describedby="loginErr"></div></div>
+          <div class="field anim"><label for="loginPassword">Password</label><div class="inputwrap"><svg aria-hidden="true"><use href="#i-lock"/></svg><input type="password" id="loginPassword" autocomplete="current-password" required aria-describedby="loginErr"><button type="button" class="pwtoggle" onclick="togglePw(this)" aria-label="Show password" aria-pressed="false"><svg aria-hidden="true"><use href="#i-eye"/></svg></button></div></div>
+          <div class="authrow anim"><button type="button" class="linkbtn" onclick="forgotPassword()">Forgot password?</button></div>
+          <div class="autherr" id="loginErr" role="alert"></div>
+          <button type="submit" class="btn block anim" id="loginBtn"><span class="spinner" aria-hidden="true"></span><span class="label">Log in</span></button>
+          <div class="googleonly anim" style="display:none"><div class="ordiv"><span>or</span></div><button type="button" class="btn secondary block" onclick="googleSignIn()"><span class="label">Continue with Google</span></button></div>
+          <p class="authswitch anim">New to Aflare? <button type="button" class="linkbtn" onclick="setAuthMode('signup')">Create an account</button></p>
+        </form>
+
+        <form class="auth-form hidden" id="form-signup" onsubmit="event.preventDefault(); submitSignup($('signupBtn'))" novalidate>
+          <div class="authhead anim">
+            <h1>Create your account</h1>
+            <p>Get alerts when satellites spot heat near you.</p>
+          </div>
+          <div class="field anim"><label for="signupName">Full name</label><div class="inputwrap"><svg aria-hidden="true"><use href="#i-user"/></svg><input type="text" id="signupName" autocomplete="name" required aria-describedby="signupErr"></div></div>
+          <div class="field anim"><label for="signupEmail">Email</label><div class="inputwrap"><svg aria-hidden="true"><use href="#i-mail"/></svg><input type="email" id="signupEmail" autocomplete="email" inputmode="email" required aria-describedby="signupErr"></div></div>
+          <div class="field anim"><label for="signupPassword">Password <span class="hint">(at least 6 characters)</span></label><div class="inputwrap"><svg aria-hidden="true"><use href="#i-lock"/></svg><input type="password" id="signupPassword" autocomplete="new-password" required minlength="6" aria-describedby="signupErr"><button type="button" class="pwtoggle" onclick="togglePw(this)" aria-label="Show password" aria-pressed="false"><svg aria-hidden="true"><use href="#i-eye"/></svg></button></div></div>
+          <div class="field anim"><label for="signupLocation">Home city or address <span class="hint">(optional)</span></label><div class="inputwrap"><svg aria-hidden="true"><use href="#i-pin"/></svg><input type="text" id="signupLocation" autocomplete="street-address"></div></div>
+          <div class="toggle-row anim"><span id="lbl-signupAlerts">Alert me about fires near my home</span><button type="button" class="switch on" id="signupAlerts" role="switch" aria-checked="true" aria-labelledby="lbl-signupAlerts" onclick="this.classList.toggle('on')"><span class="knob"></span></button></div>
+          <div class="autherr" id="signupErr" role="alert"></div>
+          <button type="submit" class="btn block anim" id="signupBtn"><span class="spinner" aria-hidden="true"></span><span class="label">Create account</span></button>
+          <div class="googleonly anim" style="display:none"><div class="ordiv"><span>or</span></div><button type="button" class="btn secondary block" onclick="googleSignIn()"><span class="label">Continue with Google</span></button></div>
+          <p class="authswitch anim">Already have an account? <button type="button" class="linkbtn" onclick="setAuthMode('login')">Log in</button></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ HOME ============ -->
+    <section class="screen" id="screen-home" aria-label="Home">
+      <div class="content">
+        <div class="card onboard" id="homeLocCard" style="display:none;">
+          <h1 class="onboard-title">Add a place to watch</h1>
+          <p class="muted-txt">Aflare shows official warnings, reported fires, satellite heat detections and fire weather for the places you choose: home, work, family.</p>
+          <button class="btn block" onclick="useMyLocation()"><svg class="bi" aria-hidden="true"><use href="#i-locate"/></svg><span class="label">Use my current location</span></button>
+          <div class="ordiv"><span>or</span></div>
+          <label class="sheetlabel" for="homeAddr">City or address</label>
+          <div class="addrow"><input id="homeAddr" class="sheetinput" type="text" autocomplete="street-address" placeholder="e.g. Boulder, CO"><button class="btn" id="homeAddBtn" onclick="homeAddPlace(this)"><span class="spinner" aria-hidden="true"></span><span class="label">Add</span></button></div>
+          <p class="fineprint">Saved to your account. To look up data, Aflare sends only the area around a place to public services.</p>
+        </div>
+
+        <div class="hero" id="hero" data-risk="none">
+          <h1 class="placeh"><button class="placebtn" id="placeBtn" onclick="openPlaces()" aria-haspopup="dialog"><svg class="pin" aria-hidden="true"><use href="#i-pin"/></svg><span id="heroPlace">Your place</span><svg class="chev" aria-hidden="true"><use href="#i-chevd"/></svg><span class="sr-only"> — switch or add places</span></button></h1>
+          <p class="herosub" id="heroSub"></p>
+          <div class="heronow">
+            <svg class="heroicon" id="heroIcon" aria-hidden="true"><use href="#w-sun"/></svg>
+            <span class="herotemp" id="heroTemp" aria-describedby="heroCond">—</span>
+          </div>
+          <p class="herocond" id="heroCond">Loading forecast…</p>
+          <p class="herohl" id="heroHL"></p>
+          <button class="riskpill" id="riskPill" onclick="explainIndex()">
+            <svg class="rk-ic" aria-hidden="true"><use href="#i-thermo"/></svg>
+            <span class="rk-txt"><span class="rk-k">Fire weather <span class="rk-est">Aflare estimate</span></span><span class="rk-v"><span id="riskLbl">—</span> <span class="rk-score" id="riskScore"></span></span><span class="rk-why" id="riskWhy"></span></span>
+            <svg class="chev" aria-hidden="true"><use href="#i-chevr"/></svg>
+          </button>
+        </div>
+
+        <div id="alertBanner" aria-live="polite"></div>
+
+        <div class="card" id="sitCard">
+          <div class="card-head"><h2 class="card-title" id="sitTitle">Near you</h2><button class="textbtn" onclick="mapGoView(); goTab('map')">Open map <svg aria-hidden="true"><use href="#i-chevr"/></svg></button></div>
+          <ul class="sitlist" id="sitList" aria-live="polite"></ul>
+          <div class="minimap-wrap">
+            <div class="leafwrap" id="homeMiniMap" aria-hidden="true"></div>
+            <button class="taphit" onclick="mapGoView(); goTab('map')" aria-label="Open the full fire map"></button>
+          </div>
+          <div id="homeNearList"></div>
+          <p class="fineprint" id="sitFoot"></p>
+        </div>
+
+        <div class="card" id="hourCard">
+          <h2 class="card-title">Hourly forecast</h2>
+          <p class="cardsub" id="hourSummary"></p>
+          <div class="hourly" id="hourly" role="list" tabindex="0" aria-label="Hourly forecast for the next 24 hours. Scroll sideways for more."></div>
+        </div>
+
+        <div class="card" id="dayCard">
+          <h2 class="card-title">10-day forecast</h2>
+          <p class="cardsub">Colored dots show fire weather (Aflare estimate). Tap a day for details.</p>
+          <div id="daily" class="daily"></div>
+        </div>
+
+        <h2 class="sr-only">Current conditions</h2>
+        <div class="tilegrid" id="tiles"></div>
+
+        <div class="card" id="newsCard">
+          <div class="card-head"><h2 class="card-title">Wildfire headlines</h2><button class="textbtn" onclick="openNews()">All <svg aria-hidden="true"><use href="#i-chevr"/></svg></button></div>
+          <p class="cardsub">News reports, not official information.</p>
+          <div id="homeNews"><p class="muted-txt">Loading…</p></div>
+        </div>
+
+        <button class="card tipcard" onclick="openTip()">
+          <span class="ic" aria-hidden="true"><svg><use href="#i-shield"/></svg></span>
+          <span class="txt"><span class="h">Fire safety tip</span><span class="s" id="tipText">Tap to learn more</span></span>
+          <svg class="chev" aria-hidden="true"><use href="#i-chevr"/></svg>
+        </button>
+
+        <div class="updatedline"><span id="homeUpdated"></span><button class="textbtn refreshlink" onclick="refreshAll(true)"><svg aria-hidden="true"><use href="#i-refresh"/></svg> Refresh</button></div>
+        <p class="fineprint" id="homeFine">Sources: warnings — US National Weather Service; reported fires — NIFC (US); satellite heat — NASA FIRMS; forecast and air quality — Open-Meteo models. Fire weather is Aflare's own estimate, not an official fire-danger rating. Aflare does not show evacuation orders.</p>
+      </div>
+    </section>
+
+    <!-- ============ MAP ============ -->
+    <section class="screen" id="screen-map" aria-labelledby="mapTitle">
+      <h1 class="sr-only" id="mapTitle">Fire map</h1>
+      <div class="maparea">
+        <div id="leafletMap" aria-label="Fire map. Use the search box, the zoom buttons, or the arrow keys to move around."></div>
+        <div class="map-chrome">
+          <form class="searchbar" role="search" onsubmit="searchPlace(event)">
+            <label for="mapSearch" class="sr-only">Search for a city or address</label>
+            <svg aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="search" id="mapSearch" placeholder="Search a city or address" enterkeyhint="search" autocomplete="off">
+            <button type="submit" class="searchgo">Go</button>
+          </form>
+          <div class="searchhit" id="searchHit" style="display:none;"></div>
+          <div class="chiprow" role="group" aria-label="Map layers and time window">
+            <button class="chip" id="chip-sat" onclick="toggleLayer('sat')">Heat detections</button>
+            <button class="chip" id="chip-inc" onclick="toggleLayer('inc')">Incidents</button>
+            <button class="chip" id="chip-per" onclick="toggleLayer('per')">Perimeters</button>
+            <span class="chipdiv" aria-hidden="true"></span>
+            <button class="chip" id="chip-24" onclick="setAge(24)" aria-label="Heat detections from the last 24 hours">24 h</button>
+            <button class="chip" id="chip-72" onclick="setAge(72)" aria-label="Heat detections from the last 72 hours">72 h</button>
+          </div>
+          <div class="statuspill" id="mapStatus" role="status">Loading…</div>
+        </div>
+        <details class="legend" id="mapLegend">
+          <summary>Legend</summary>
+          <ul>
+            <li class="lghead">Satellite heat (unconfirmed)</li>
+            <li><span class="dotc low" aria-hidden="true"></span>Weak (under 10 MW)</li>
+            <li><span class="dotc med" aria-hidden="true"></span>Moderate (10–50 MW)</li>
+            <li><span class="dotc high" aria-hidden="true"></span>Intense (over 50 MW)</li>
+            <li><span class="hs-count lgcount" aria-hidden="true">12</span>Group — tap to zoom in</li>
+            <li class="lghead">Reported fires (official)</li>
+            <li><svg class="lgflame" aria-hidden="true"><use href="#i-flame"/></svg>Active incident</li>
+            <li><svg class="lgflame done" aria-hidden="true"><use href="#i-flame"/></svg>Fully contained</li>
+            <li class="lghead">Places</li>
+            <li><span class="dotc home" aria-hidden="true"></span>Your saved places</li>
+          </ul>
+        </details>
+        <div class="mapbtns">
+          <button class="mapbtn" id="mapListBtn" onclick="openMapList()"><svg aria-hidden="true"><use href="#i-list"/></svg><span>List</span></button>
+          <button class="mapbtn" id="basemapBtn" onclick="toggleBasemap()"><svg aria-hidden="true"><use href="#i-layers"/></svg><span id="basemapLbl">Satellite</span></button>
+          <button class="mapbtn" onclick="locateOnMap()" aria-label="Show my location"><svg aria-hidden="true"><use href="#i-locate"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LEARN ============ -->
+    <section class="screen" id="screen-learn" aria-labelledby="learnTitle">
+      <div class="content">
+        <h1 class="pagetitle anim" id="learnTitle">Learn</h1>
+        <p class="pagesub anim">Prepare your home and family before fire season.</p>
+        <button class="hero-card anim" id="featured-card" onclick="openArticle(FEATURED_ID,'learn')">
+          <img class="heroimg" id="featured-img" src="img/learn/featured.jpg" alt="">
+          <span class="overlay"><span class="tag">Featured</span><span class="title" id="featured-title"></span><span class="meta" id="featured-meta"></span></span>
+        </button>
+
+        <h2 class="sectionhead" id="clhead">Get ready checklist</h2>
+        <div class="card checklist-card">
+          <div class="prog"><div class="bar" aria-hidden="true"><div class="fill" id="clbar"></div></div><div class="progtxt" id="cltxt" aria-live="polite"></div></div>
+          <p class="cardsub">Tap an item when it's done. Progress is saved with your places and settings.</p>
+          <div id="clitems" role="group" aria-labelledby="clhead"></div>
+          <button class="textbtn" id="clreset" onclick="resetChecklist()" style="display:none">Start over</button>
+        </div>
+
+        <div class="chiprow wrap anim" id="learnFilter" role="group" aria-label="Filter by topic"></div>
+
+        <h2 class="sectionhead anim">Articles</h2>
+        <div class="card list anim" id="articlelist"></div>
+
+        <h2 class="sectionhead anim">Videos</h2>
+        <div class="card list anim" id="videolist"></div>
+
+        <h2 class="sectionhead anim">Official resources</h2>
+        <div class="card list anim" id="reslist"></div>
+      </div>
+    </section>
+
+    <!-- ============ NEWS ============ -->
+    <section class="screen" id="screen-news" aria-labelledby="newsTitle">
+      <div class="content">
+        <div class="pagehead"><h1 class="pagetitle" id="newsTitle">Alerts &amp; news</h1><button class="textbtn" onclick="openPlaces()">Change place</button></div>
+        <h2 class="sectionhead">Official warnings</h2>
+        <p class="cardsub" id="alertsFor"></p>
+        <div id="alertsList"></div>
+        <div class="notecard"><svg aria-hidden="true"><use href="#i-shield"/></svg><p><b>Evacuation orders aren't shown here.</b> They come from your county, sheriff or fire agency. <button class="linkbtn" onclick="goTab('emergency')">Find your local alerts</button></p></div>
+        <div class="pagehead sub"><h2 class="sectionhead">Wildfire headlines</h2><button class="textbtn" id="newsRefresh" onclick="loadNews(true)">Refresh</button></div>
+        <p class="cardsub">News reports from many publishers — not official information, and not checked by Aflare.</p>
+        <div class="chiprow wrap" id="newsScope" role="group" aria-label="Headline area"></div>
+        <div class="card list" id="newslist" aria-live="polite"><p class="muted-txt">Loading headlines…</p></div>
+        <p class="fineprint">Headlines are indexed by the GDELT Project and open on each publisher's own site.</p>
+      </div>
+    </section>
+
+    <!-- ============ ARTICLE / VIDEO DETAIL ============ -->
+    <section class="screen" id="screen-article" aria-labelledby="art-title">
+      <div class="content flush">
+        <div class="detailhead" id="art-head">
+          <div class="bgimg" id="art-bg"></div>
+          <div class="ytwrap" id="art-video" style="display:none;"></div>
+        </div>
+        <p class="photocredit" id="art-credit"></p>
+        <div class="detailbody">
+          <div class="cat" id="art-cat"></div>
+          <h1 id="art-title"></h1>
+          <div class="meta" id="art-meta"></div>
+          <div id="art-body" class="prose"></div>
+          <div class="btnrow"><button class="btn secondary small" id="art-share" onclick="shareArticle()"><svg class="bi" aria-hidden="true"><use href="#i-share"/></svg><span class="label">Share</span></button><button class="btn secondary small" id="art-done" onclick="toggleArticleDone()" aria-pressed="false"><svg class="bi" aria-hidden="true"><use href="#i-check"/></svg><span class="label">Mark as read</span></button></div>
+          <div id="art-related"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROFILE ============ -->
+    <section class="screen" id="screen-profile" aria-labelledby="profile-name">
+      <div class="content">
+        <div class="profilehead anim">
+          <button class="av" id="profile-av" onclick="pickPhoto()" aria-label="Change profile photo">?</button>
+          <button class="textbtn avlink" onclick="pickPhoto()"><svg aria-hidden="true"><use href="#i-camera"/></svg> Change photo</button>
+          <input type="file" id="photoInput" accept="image/*" class="sr-only" tabindex="-1" aria-hidden="true" onchange="photoChosen(this)">
+          <h1 class="name" id="profile-name"></h1>
+          <div class="em" id="profile-email"></div>
+          <div class="acctmode" id="acctMode"></div>
+          <p class="syncline" id="syncLine" aria-live="polite"></p>
+          <div class="acctmode" id="verifyLine" style="display:none"></div>
+        </div>
+
+        <div class="installcard anim" id="installCard" style="display:none;">
+          <div><b>Install Aflare</b><span>Opens full-screen, shows your last saved data when offline, and on Android can check for fires in the background.</span></div>
+          <button class="btn small" onclick="installApp()"><span class="label">Install</span></button>
+        </div>
+
+        <h2 class="sectionhead" id="locSection">My places</h2>
+        <p class="cardsub">Aflare watches every saved place while it's open. Your Home place opens first.</p>
+        <div class="card list" id="locationlist"></div>
+        <div class="btnrow">
+          <button class="btn secondary small" onclick="useMyLocation()"><svg class="bi" aria-hidden="true"><use href="#i-locate"/></svg><span class="label">Add current location</span></button>
+          <button class="btn secondary small" onclick="toggleAddLocation()"><svg class="bi" aria-hidden="true"><use href="#i-plus"/></svg><span class="label">Add address</span></button>
+        </div>
+        <div class="card inline-form" id="addLocForm" style="display:none;">
+          <label for="newLocCity">City or full address</label><input type="text" id="newLocCity" autocomplete="street-address" placeholder="e.g. 123 Main St, Bend, OR">
+          <label for="newLocName">Name <span class="hint">(optional)</span></label><input type="text" id="newLocName" maxlength="40" placeholder="e.g. Cabin, Mom's house">
+          <div class="row"><button class="btn secondary small" onclick="toggleAddLocation()"><span class="label">Cancel</span></button><button class="btn small" id="saveLocBtn" onclick="saveLocation(this)"><span class="spinner" aria-hidden="true"></span><span class="label">Find &amp; save</span></button></div>
+        </div>
+
+        <h2 class="sectionhead">Emergency contacts</h2>
+        <div class="card list anim" id="contactlist"></div>
+        <div class="btnrow anim"><button class="btn secondary small" onclick="toggleAddContact()"><svg class="bi" aria-hidden="true"><use href="#i-plus"/></svg><span class="label">Add contact</span></button></div>
+        <div class="card inline-form" id="addContactForm" style="display:none;">
+          <label for="newContactName">Name</label><input type="text" id="newContactName" autocomplete="off">
+          <label for="newContactPhone">Mobile number</label><input type="tel" id="newContactPhone" inputmode="tel" autocomplete="off">
+          <div class="row"><button class="btn secondary small" onclick="toggleAddContact()"><span class="label">Cancel</span></button><button class="btn small" onclick="saveContact()"><span class="label">Save</span></button></div>
+        </div>
+
+        <h2 class="sectionhead">Alerts</h2>
+        <div class="card list" id="alertsCard">
+          <div class="listrow"><div class="grow"><div class="h" id="lbl-push">Phone notifications</div><div class="s" id="pushStatus">Off</div></div><button class="switch" id="sw-push" role="switch" aria-checked="false" aria-labelledby="lbl-push" aria-describedby="pushStatus" onclick="togglePush(this)"><span class="knob"></span></button></div>
+          <div class="listrow"><div class="grow"><div class="h" id="lbl-wx">Include NWS warnings</div><div class="s" id="desc-wx">Red Flag and other fire-weather warnings (US)</div></div><button class="switch on" id="sw-wx" role="switch" aria-checked="true" aria-labelledby="lbl-wx" aria-describedby="desc-wx" onclick="toggleSetting('wxAlerts', this)"><span class="knob"></span></button></div>
+          <div class="listrow"><div class="grow"><div class="h" id="lbl-conf">Hide low-confidence detections</div><div class="s" id="desc-conf">Fewer false alarms on Home, the map and alerts — but you may miss small fires</div></div><button class="switch" id="sw-conf" role="switch" aria-checked="false" aria-labelledby="lbl-conf" aria-describedby="desc-conf" onclick="toggleSetting('highConfOnly', this)"><span class="knob"></span></button></div>
+          <div class="listrow block"><div class="h" id="lbl-radius">Radius</div><div class="s">For alerts and the Home summary</div>
+            <div class="radiusrow" id="radiusrow" role="group" aria-labelledby="lbl-radius">
+              <button class="rchip" data-r="10" onclick="setRadius(10)">10 mi</button>
+              <button class="rchip" data-r="25" onclick="setRadius(25)">25 mi</button>
+              <button class="rchip" data-r="50" onclick="setRadius(50)">50 mi</button>
+              <button class="rchip" data-r="100" onclick="setRadius(100)">100 mi</button>
+            </div>
+          </div>
+          <button class="listrow clickable-row" onclick="testAlert()"><span class="grow"><span class="h">Send a test alert</span><span class="s">Check that notifications reach this device</span></span><svg class="chev" aria-hidden="true"><use href="#i-chevr"/></svg></button>
+        </div>
+        <p class="fineprint">How alerts work: Aflare checks for new data when you open it and about every 10 minutes while it stays open. There is no alert server, so if Aflare is closed you may not be alerted. Installed on Android with Chrome, the browser may also let Aflare check every few hours in the background, but it decides when. <b>Always sign up for your county's official emergency alerts.</b></p>
+
+        <h2 class="sectionhead">Account</h2>
+        <div class="card list">
+          <button class="listrow clickable-row" onclick="toggleEditProfile()"><span class="grow h">Edit profile</span><svg class="chev" aria-hidden="true"><use href="#i-chevr"/></svg></button>
+          <button class="listrow clickable-row" onclick="togglePasswordForm()"><span class="grow h">Change password</span><svg class="chev" aria-hidden="true"><use href="#i-chevr"/></svg></button>
+          <button class="listrow clickable-row" onclick="show('privacy')"><span class="grow h">Privacy, data &amp; about</span><svg class="chev" aria-hidden="true"><use href="#i-chevr"/></svg></button>
+          <button class="listrow clickable-row danger" onclick="logOut()"><span class="grow h">Log out</span></button>
+        </div>
+        <div class="card inline-form" id="passwordForm" style="display:none;">
+          <label for="pwCurrent">Current password</label><input type="password" id="pwCurrent" autocomplete="current-password">
+          <label for="pwNew">New password (at least 6 characters)</label><input type="password" id="pwNew" autocomplete="new-password">
+          <label for="pwNew2">Repeat new password</label><input type="password" id="pwNew2" autocomplete="new-password">
+          <div class="row"><button class="btn secondary small" onclick="togglePasswordForm()"><span class="label">Cancel</span></button><button class="btn small" onclick="changePassword(this)"><span class="spinner" aria-hidden="true"></span><span class="label">Update</span></button></div>
+        </div>
+        <div class="card inline-form" id="editProfileForm" style="display:none;">
+          <label for="editName">Full name</label><input type="text" id="editName" autocomplete="name">
+          <div class="row"><button class="btn secondary small" onclick="toggleEditProfile()"><span class="label">Cancel</span></button><button class="btn small" onclick="saveProfile()"><span class="label">Save</span></button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PRIVACY / ABOUT ============ -->
+    <section class="screen" id="screen-privacy" aria-labelledby="privTitle">
+      <div class="content">
+        <h1 class="pagetitle anim" id="privTitle">Privacy, data &amp; about</h1>
+        <div class="card anim prose aboutcard">
+          <img class="word" src="img/wordmark.png" alt="Aflare">
+          <p class="mission">Aflare aims to make fire awareness faster.</p>
+          <p>Aflare brings NASA satellite fire detections, official incident reports, weather alerts, fire-weather forecasts and air quality together in one place, so you know sooner when fire weather or a fire is near the people and places you care about.</p>
+        </div>
+        <div class="card anim prose">
+          <h2>What Aflare stores</h2>
+          <p>Your name, email, profile photo, saved locations, emergency contacts and alert settings. With a synced account this is stored in your private Firestore document, readable only by you; otherwise it stays on this device.</p>
+          <p>Checklist progress and read articles are stored the same way. Your device's live location is used only when you ask for it (adding your current location, “Current location” on Home, the Call tab) and is not stored unless you save it as a place. To look up data, the app sends the area around a place to the public services below; they see your IP address like any website would.</p>
+          <div class="btnrow"><button class="btn secondary small" onclick="exportData()"><span class="label">Export my data</span></button><button class="btn danger small" onclick="deleteAccount()"><span class="label">Delete account &amp; data</span></button></div>
+        </div>
+        <div class="card anim prose">
+          <h2>Data sources</h2>
+          <p><b>Fire detections:</b> <span id="srcFire">NASA FIRMS VIIRS 375&nbsp;m active fire data (NASA/LANCE).</span><br>
+          <b>US incidents &amp; perimeters:</b> NIFC WFIGS (National Interagency Fire Center).<br>
+          <b>Weather alerts:</b> US National Weather Service (api.weather.gov).<br>
+          <b>Forecast:</b> <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0).<br>
+          <b>Maps:</b> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors; satellite imagery and place labels © Esri, Maxar, Earthstar Geographics and the GIS User Community. Geocoding by Nominatim. Map library: Leaflet.<br>
+          <b>Headlines:</b> GDELT Project.<br>
+          <b>Videos:</b> YouTube (embedded from their original publishers).</p>
+        </div>
+        <div class="card anim prose">
+          <h2>Photo credits</h2>
+          <ul class="credits" id="photoCredits"></ul>
+        </div>
+        <div class="card anim prose">
+          <h2>Important limits</h2>
+          <p>A satellite detection is a <b>heat anomaly</b>, not a confirmed wildfire. It can be a prescribed burn, crop fire or industrial heat source, and satellites pass only every few hours, so clouds and timing can hide real fires.</p>
+          <p><b>Reported fires</b> come from US fire agencies via NIFC and can lag behind events. <b>Official warnings</b> come from the US National Weather Service. Aflare <b>does not show evacuation orders</b> — those come from your county or sheriff.</p>
+          <p><b>Fire weather</b> is Aflare's own simple estimate from the forecast. It is not an official fire-danger rating and does not predict whether a fire will start.</p>
+          <p><b>Alerts</b> are checked while Aflare is open (and, on Android with the installed app, sometimes in the background). There is no alert server, so alerts can be late or missed. Aflare <b>never replaces official emergency alerts or a call to emergency services</b>.</p>
+        </div>
+        <p class="fineprint center" id="versionLine">Aflare</p>
+      </div>
+    </section>
+
+    <!-- ============ NOTIFICATIONS ============ -->
+    <section class="screen" id="screen-notif" aria-labelledby="notifTitle">
+      <div class="content">
+        <div class="pagehead anim">
+          <h1 class="pagetitle" id="notifTitle">Notifications</h1>
+        </div>
+        <p class="cardsub" id="notifStatus"></p>
+        <div class="notifacts"><button class="textbtn" onclick="markAllRead()">Mark all read</button><button class="textbtn" onclick="clearFeed()">Clear</button></div>
+        <div id="notiflist"></div>
+      </div>
+    </section>
+
+    <!-- ============ EMERGENCY ============ -->
+    <section class="screen" id="screen-emergency" aria-labelledby="emgTitle">
+      <div class="content">
+        <div class="emg-head">
+          <h1 id="emgTitle">Call &amp; report</h1>
+          <p>See flames or smoke that may not be reported? Call emergency services now. Aflare can't contact them for you.</p>
+        </div>
+        <a class="callcircle" id="callBtn" href="tel:911"><svg aria-hidden="true"><use href="#i-phone"/></svg><span id="callLabel">Call 911</span></a>
+        <p class="calldemo" id="callNote">Emergency number for your region</p>
+        <p class="deskcall" id="deskCall" style="display:none">On a computer? Dial <b id="deskCallNum">911</b> from your phone.</p>
+
+        <div class="locbox">
+          <svg aria-hidden="true"><use href="#i-pin"/></svg>
+          <div class="grow" aria-live="polite"><div class="lbl">Tell the dispatcher where you are</div><div class="h" id="emgLocH">Finding your location…</div><div class="s" id="emgLocS">Allow location access to show your address</div></div>
+          <button class="rowbtn" onclick="copyLocation()" aria-label="Copy your location">Copy</button>
+        </div>
+        <p class="emg-tip" id="textTip" style="display:none">Can't talk safely? Text-to-911 works in many US areas. If it isn't available, you'll get a reply telling you to call.</p>
+
+        <h2 class="sectionhead">Tell your people</h2>
+        <div class="card list" id="emgContacts"></div>
+        <div class="sevwrap">
+          <div class="lbl" id="lbl-sev">What do you see? <span class="hint">(goes in your message)</span></div>
+          <div class="sevrow" id="sevrow" role="radiogroup" aria-labelledby="lbl-sev">
+            <button class="sevchip" role="radio" aria-checked="false" onclick="selectSev(this)">Smoke only</button>
+            <button class="sevchip active" role="radio" aria-checked="true" onclick="selectSev(this)">Small fire</button>
+            <button class="sevchip" role="radio" aria-checked="false" onclick="selectSev(this)">Large fire</button>
+            <button class="sevchip" role="radio" aria-checked="false" onclick="selectSev(this)">Structure</button>
+          </div>
+        </div>
+        <div class="emg-actions">
+          <button class="btn secondary" onclick="alertContacts()"><span class="label">Text contacts</span></button>
+          <button class="btn secondary" onclick="shareLocation()"><span class="label">Share report</span></button>
+          <button class="btn secondary wide" onclick="sendSafe()"><span class="label">Text “I'm safe”</span></button>
+        </div>
+
+        <h2 class="sectionhead">Official help &amp; information</h2>
+        <div class="card list" id="emgResources"></div>
+        <p class="emg-note">Aflare is an information tool, not an emergency service. It does not show evacuation orders. In danger, call first and leave early.</p>
+      </div>
+    </section>
+
+    <!-- ============ BOTTOM NAV ============ -->
+    <nav class="bottomnav" id="bottomnav" aria-label="Main">
+      <button class="navitem" data-tab="home" onclick="goTab('home')"><svg aria-hidden="true"><use href="#i-home"/></svg><span>Home</span></button>
+      <button class="navitem" data-tab="map" onclick="goTab('map')"><svg aria-hidden="true"><use href="#i-map"/></svg><span>Map</span></button>
+      <button class="navitem" data-tab="learn" onclick="goTab('learn')"><svg aria-hidden="true"><use href="#i-book"/></svg><span>Learn</span></button>
+      <button class="navitem callitem" data-tab="emergency" onclick="goEmergency()"><svg aria-hidden="true"><use href="#i-phone"/></svg><span>Call</span></button>
+    </nav>
+
+    <div class="sheet-backdrop" id="fireBackdrop" onclick="closeSheets()"></div>
+    <div class="sheet" id="fireSheet" role="dialog" aria-modal="true" aria-labelledby="fs-name">
+      <div class="grip" aria-hidden="true"></div>
+      <button class="iconbtn sheetclose" onclick="closeSheets()" aria-label="Close"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+      <p class="fs-kind" id="fs-kind"></p>
+      <h2 id="fs-name" tabindex="-1"><svg aria-hidden="true"><use href="#i-flame"/></svg><span></span></h2>
+      <div class="sub" id="fs-sub"></div>
+      <div class="stats">
+        <div class="stat"><div class="v" id="fs-v1"></div><div class="l" id="fs-l1"></div></div>
+        <div class="stat"><div class="v" id="fs-v2"></div><div class="l" id="fs-l2"></div></div>
+        <div class="stat"><div class="v" id="fs-v3"></div><div class="l" id="fs-l3"></div></div>
+      </div>
+      <dl class="fsdetails" id="fs-details"></dl>
+      <p class="sheetnote" id="fs-note"></p>
+      <div class="actionrow"><button class="btn secondary" id="fs-zoom" onclick="zoomToSheet()"><span class="label">Zoom in</span></button><button class="btn secondary" onclick="openFireExternal()"><span class="label" id="fs-ext">More info</span></button></div>
+      <button class="btn block" onclick="closeSheets(); goEmergency()"><svg class="bi" aria-hidden="true"><use href="#i-phone"/></svg><span class="label">See fire or smoke? Call &amp; report</span></button>
+    </div>
+
+    <div class="sheet" id="infoSheet" role="dialog" aria-modal="true" aria-labelledby="info-title">
+      <div class="grip" aria-hidden="true"></div>
+      <button class="iconbtn sheetclose" onclick="closeSheets()" aria-label="Close"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+      <h2 id="info-title" tabindex="-1"></h2>
+      <div class="infobody" id="info-body"></div>
+      <div class="actionrow" id="info-actions"><button class="btn" onclick="closeSheets()"><span class="label">Got it</span></button></div>
+    </div>
+
+    <div class="pillbar" id="offlineBar" role="status" style="display:none;">Offline — showing last saved data</div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  </div>
+</div>
+</div>
+
+<script src="lib/leaflet.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
