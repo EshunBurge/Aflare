@@ -6,7 +6,7 @@
    (UI, map and screens continue below in the second half of this file.)
    ========================================================================= */
 
-const VERSION = '2.3.4';
+const VERSION = '2.3.6';
 const CFG = Object.assign({ firebase: null }, window.AFLARE_CONFIG || {});
 
 /* ---------------------------------------------------------------- 1 Helpers */

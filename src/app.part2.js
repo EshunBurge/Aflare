@@ -265,7 +265,7 @@ const BASEMAPS = {
   sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opt: { maxZoom: 19, attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics' } },
   labels: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', opt: { maxZoom: 19 } },
 };
-let baseLayer, labelLayer;
+let baseLayer, labelLayer, oldBase = [];
 const OSM = BASEMAPS.map.url;
 const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors';
 
@@ -293,11 +293,17 @@ function syncMapChips() {
 
 function setBasemap(kind) {
   kind = kind === 'sat' ? 'sat' : 'map';
-  if (baseLayer) map.removeLayer(baseLayer);
+  if (baseLayer) oldBase.push(baseLayer);
   if (labelLayer) { map.removeLayer(labelLayer); labelLayer = null; }
-  baseLayer = L.tileLayer(BASEMAPS[kind].url, BASEMAPS[kind].opt).addTo(map);
-  baseLayer.bringToBack();
-  if (kind === 'sat') labelLayer = L.tileLayer(BASEMAPS.labels.url, BASEMAPS.labels.opt).addTo(map);
+  const layer = baseLayer = L.tileLayer(BASEMAPS[kind].url, BASEMAPS[kind].opt).addTo(map);
+  layer.bringToBack();
+  /* Keep the previous map underneath until the new tiles have loaded, so switching never flashes a blank map. */
+  const swap = () => {
+    if (layer !== baseLayer) return;
+    oldBase.forEach((l) => map.removeLayer(l)); oldBase = [];
+    if (kind === 'sat' && !labelLayer) labelLayer = L.tileLayer(BASEMAPS.labels.url, BASEMAPS.labels.opt).addTo(map);
+  };
+  if (oldBase.length) { layer.once('load', swap); setTimeout(swap, 5000); } else swap();
   state.basemap = kind; LS.set('basemap', kind);
   $('basemapLbl').textContent = kind === 'sat' ? 'Street map' : 'Satellite';
   $('basemapBtn').setAttribute('aria-label', kind === 'sat' ? 'Switch to street map' : 'Switch to satellite imagery');
